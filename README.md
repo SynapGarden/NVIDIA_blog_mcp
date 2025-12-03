@@ -11,6 +11,22 @@ A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.i
 - ✅ **Production Ready**: Deployed on Google Cloud Run with high availability
 - 🎯 **Grounded Responses**: All answers include source citations from official NVIDIA blogs
 
+## Kaggle Submission
+
+This project was submitted for the **Agents Intensive Capstone Project** (5-Day AI Agents Intensive Course with Google).
+
+**Track**: Agents for Good
+
+**Key Concepts Demonstrated**:
+1. **RAG (Retrieval-Augmented Generation)** - Using Vertex AI RAG Corpus for grounded information retrieval
+2. **Query Transformation** - Using Gemini 2.0 Flash to improve query quality
+3. **Answer Grading & Iterative Refinement** - Quality assurance loop with automatic query refinement
+4. **Model Context Protocol (MCP)** - Building production-ready agent tools
+5. **Vector Search** - Semantic similarity search using Vertex AI Vector Search
+
+**Status**: ✅ Successfully submitted. Results will be announced before the end of December 2025.
+
+
 ## Quick Start for Cursor
 
 Add this to your Cursor MCP configuration file (usually `~/.cursor/mcp.json` or `%APPDATA%\Cursor\User\mcp.json`):
@@ -108,7 +124,8 @@ Key configuration variables:
 - `RAG_CORPUS`: Vertex AI RAG Corpus resource path
 - `VECTOR_SEARCH_ENDPOINT_ID`: Vector Search endpoint ID
 - `VECTOR_SEARCH_INDEX_ID`: Vector Search index ID
-- `RAG_VECTOR_DISTANCE_THRESHOLD`: Similarity threshold (default: 0.7)
+- `RAG_VECTOR_DISTANCE_THRESHOLD`: Similarity threshold (default: 0.5)
+- `GEMINI_MODEL_LOCATION`: Location for Gemini models (default: europe-west4)
 
 ## Development
 
@@ -222,14 +239,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ✅ **Operational** - Server is live and serving queries  
 📊 **Database**: 100+ blog posts indexed and searchable  
 🔄 **Updates**: Daily automated ingestion active  
-⚙️ **Search Metrics**: Vector distance threshold 0.7, default 10 neighbors
+⚙️ **Search Metrics**: Vector distance threshold 0.5, default 10 neighbors
 
 ## Architecture
 
 The MCP server uses a production-ready architecture:
 
 - **Search Methods**: Dual RAG and Vector Search with configurable thresholds
-- **Query Enhancement**: Automatic query transformation using Gemini 1.5 Flash
+- **Query Enhancement**: Automatic query transformation using Gemini 2.0 Flash
 - **Quality Assurance**: Answer grading with iterative refinement (up to 2 iterations)
 - **Deployment**: Google Cloud Run with automatic scaling
 - **Data Pipeline**: Daily automated RSS ingestion keeps content current
@@ -237,9 +254,10 @@ The MCP server uses a production-ready architecture:
 ## Performance
 
 - **Default Results**: 10 neighbors/contexts per query
-- **Distance Threshold**: 0.7 (tuned for precision)
+- **Distance Threshold**: 0.5 (balanced for recall and precision)
 - **Response Time**: Sub-second for most queries
 - **Availability**: High availability on Cloud Run
+- **Gemini Integration**: Query transformation and grading via europe-west4 (Netherlands, closest to RAG corpus in europe-west3 for data residency)
 
 ---
 

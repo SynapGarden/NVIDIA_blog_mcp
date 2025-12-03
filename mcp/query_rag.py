@@ -90,7 +90,7 @@ class RAGQuery:
     def _retrieve_contexts(
         self,
         query_text: str,
-        similarity_top_k: int = 5,
+        similarity_top_k: int = 10,
         vector_distance_threshold: float = 0.7
     ) -> List[Dict]:
         """
@@ -155,7 +155,7 @@ class RAGQuery:
     def query(
         self,
         query_text: str,
-        similarity_top_k: int = 5,
+        similarity_top_k: int = 10,
         vector_distance_threshold: float = 0.7
     ) -> Dict:
         """
@@ -163,7 +163,7 @@ class RAGQuery:
 
         Args:
             query_text: The original user query text
-            similarity_top_k: Number of top results (default: 5)
+            similarity_top_k: Number of top results (default: 10)
             vector_distance_threshold: Minimum similarity (default: 0.7)
 
         Returns:

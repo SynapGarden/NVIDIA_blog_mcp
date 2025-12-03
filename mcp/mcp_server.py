@@ -198,7 +198,7 @@ def get_vector_query():
 def search_nvidia_blogs(
     query: str,
     method: str = "rag",
-    top_k: int = 5
+    top_k: int = 10
 ) -> dict:
     # Returns dict (Pydantic models serialize to dict)
     # Actual return types: RAGQueryResult | VectorSearchResult | ErrorResult
@@ -241,7 +241,7 @@ def search_nvidia_blogs(
         query: Your search query describing what you need (e.g., "How to optimize CUDA kernels",
                "TensorRT inference tutorial", "GPU memory management", "Deep learning best practices")
         method: Search method - "rag" (recommended for grounded responses) or "vector" (default: "rag")
-        top_k: Number of results to return, 1-20 (default: 5). More results provide broader context.
+        top_k: Number of results to return, 1-20 (default: 10). More results provide broader context.
 
     Returns:
         SearchResult containing verified blog content with:

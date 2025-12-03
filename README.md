@@ -82,18 +82,20 @@ The server maintains an up-to-date database through a daily automated ingestion 
 
 ```
 nvidia_blog/
-├── mcp_server.py              # Main MCP server implementation
-├── mcp_service.py            # Cloud Run service entry point
-├── query_rag.py              # RAG Corpus query module
-├── query_vector_search.py     # Vector Search query module
-├── rag_query_transformer.py  # Query enhancement
-├── rag_answer_grader.py      # Answer quality evaluation
-├── config.py                 # Configuration management
+├── mcp/                      # MCP server implementation
+│   ├── mcp_server.py         # Main MCP server
+│   ├── mcp_service.py        # Cloud Run service entry point
+│   ├── query_rag.py          # RAG Corpus query module
+│   ├── query_vector_search.py # Vector Search query module
+│   ├── rag_query_transformer.py # Query enhancement
+│   ├── rag_answer_grader.py  # Answer quality evaluation
+│   └── config.py             # Configuration management
 ├── Dockerfile.mcp            # Container definition
-├── cloudbuild.mcp.yaml      # CI/CD configuration
-├── requirements.txt          # Python dependencies
-└── docs/                     # Documentation
-    └── MCP_SERVER_TECHNICAL_REPORT.md
+├── cloudbuild.mcp.yaml       # CI/CD configuration
+├── requirements.txt           # Python dependencies
+├── LICENSE                   # MIT License
+├── CONTRIBUTING.md           # Contribution guidelines
+└── SECURITY.md               # Security policy
 ```
 
 ## Configuration
@@ -106,7 +108,7 @@ Key configuration variables:
 - `RAG_CORPUS`: Vertex AI RAG Corpus resource path
 - `VECTOR_SEARCH_ENDPOINT_ID`: Vector Search endpoint ID
 - `VECTOR_SEARCH_INDEX_ID`: Vector Search index ID
-- `RAG_VECTOR_DISTANCE_THRESHOLD`: Similarity threshold (default: 0.5)
+- `RAG_VECTOR_DISTANCE_THRESHOLD`: Similarity threshold (default: 0.7)
 
 ## Development
 
@@ -121,8 +123,8 @@ Key configuration variables:
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/nvidia-blog-mcp.git
-   cd nvidia-blog-mcp
+   git clone https://github.com/TomBombadyl/nvidia-blog.git
+   cd nvidia-blog
    ```
 
 2. Create virtual environment:
@@ -152,8 +154,11 @@ Key configuration variables:
 The MCP server is designed to run on Cloud Run, but you can test the server locally:
 
 ```bash
+cd mcp
 python mcp_service.py
 ```
+
+**Note**: The server expects all MCP modules to be in the same directory. When running locally, ensure you're in the `mcp/` directory or adjust Python path accordingly.
 
 ## Deployment
 
@@ -177,7 +182,7 @@ gcloud builds submit --config cloudbuild.mcp.yaml --project=your-project-id
       "distance": 0.45
     }
   ],
-  "count": 5,
+  "count": 10,
   "grade": {
     "score": 0.85,
     "relevance": 0.90,
@@ -210,14 +215,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [MCP Protocol Documentation](https://modelcontextprotocol.io)
 - [NVIDIA Developer Blog](https://developer.nvidia.com/blog)
 - [NVIDIA Official Blog](https://blogs.nvidia.com)
-- [Technical Documentation](docs/MCP_SERVER_TECHNICAL_REPORT.md)
+- [GitHub Repository](https://github.com/TomBombadyl/nvidia-blog)
 
 ## Status
 
 ✅ **Operational** - Server is live and serving queries  
 📊 **Database**: 100+ blog posts indexed and searchable  
-🔄 **Updates**: Daily automated ingestion active
+🔄 **Updates**: Daily automated ingestion active  
+⚙️ **Search Metrics**: Vector distance threshold 0.7, default 10 neighbors
+
+## Architecture
+
+The MCP server uses a production-ready architecture:
+
+- **Search Methods**: Dual RAG and Vector Search with configurable thresholds
+- **Query Enhancement**: Automatic query transformation using Gemini 1.5 Flash
+- **Quality Assurance**: Answer grading with iterative refinement (up to 2 iterations)
+- **Deployment**: Google Cloud Run with automatic scaling
+- **Data Pipeline**: Daily automated RSS ingestion keeps content current
+
+## Performance
+
+- **Default Results**: 10 neighbors/contexts per query
+- **Distance Threshold**: 0.7 (tuned for precision)
+- **Response Time**: Sub-second for most queries
+- **Availability**: High availability on Cloud Run
 
 ---
 
-Made with ❤️ for the AI development community
+Built for developers by developers
+"Let's go find your wand" - TB

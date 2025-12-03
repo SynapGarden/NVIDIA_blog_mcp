@@ -102,14 +102,14 @@ class VectorSearchQuery:
     def query(
         self,
         query_text: str,
-        num_neighbors: int = 5
+        num_neighbors: int = 10
     ) -> Dict:
         """
         Query Vector Search index for similar vectors.
         
         Args:
             query_text: The query text to search for
-            num_neighbors: Number of nearest neighbors to return (default: 5)
+            num_neighbors: Number of nearest neighbors to return (default: 10)
             
         Returns:
             Dictionary containing query results with neighbors

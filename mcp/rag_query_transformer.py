@@ -22,15 +22,16 @@ class QueryTransformer:
             project_id: GCP project ID
             region: GCP region (for RAG corpus, not used for Gemini)
             model_name: Vertex AI model name for query transformation (default: from config)
-            gemini_location: Location for Gemini model (default: 'global' from config)
+            gemini_location: Location for Gemini model (default: 'europe-west4' from config)
         """
         self.project_id = project_id
         self.region = region
         self.model_name = model_name or GEMINI_MODEL_NAME
         self.gemini_location = gemini_location or GEMINI_MODEL_LOCATION
         
-        # Initialize Vertex AI with global endpoint for Gemini models
-        # Global endpoint provides enhanced availability and works with all Gemini 2.0+ models
+        # Initialize Vertex AI with europe-west4 for Gemini models
+        # Using europe-west4 (Netherlands) - closest European region to RAG corpus (europe-west3)
+        # This follows Google best practice: use region-specific locations for data residency
         vertexai.init(project=project_id, location=self.gemini_location)
         
         # Initialize generative model

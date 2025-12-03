@@ -50,9 +50,10 @@ REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", "30"))
 RAG_VECTOR_DISTANCE_THRESHOLD = float(os.getenv("RAG_VECTOR_DISTANCE_THRESHOLD", "0.5"))
 
 # Gemini Model Configuration
-# Gemini models use the global endpoint for enhanced availability
-# Global endpoint works with all Gemini 2.0+ models and doesn't require regional availability
-GEMINI_MODEL_LOCATION = os.getenv("GEMINI_MODEL_LOCATION", "global")
+# Gemini models are available in europe-west4 (Netherlands) - closest to europe-west3 (Frankfurt)
+# Using europe-west4 for better data residency and reduced latency vs us-central1
+# Per Google docs: Use region-specific locations instead of 'global' for data residency requirements
+GEMINI_MODEL_LOCATION = os.getenv("GEMINI_MODEL_LOCATION", "europe-west4")
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
 
 # Logging Configuration

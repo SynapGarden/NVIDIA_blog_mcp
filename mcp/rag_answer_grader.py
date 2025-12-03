@@ -4,10 +4,11 @@ Evaluates the quality and relevance of retrieved contexts and generated answers.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 from vertexai.generative_models import GenerativeModel
 import vertexai
 from pydantic import BaseModel, Field
+from config import GEMINI_MODEL_NAME, GEMINI_MODEL_LOCATION
 
 logger = logging.getLogger(__name__)
 
@@ -25,31 +26,34 @@ class AnswerGrade(BaseModel):
 class AnswerGrader:
     """Grades retrieved contexts and answers for quality and relevance."""
     
-    def __init__(self, project_id: str, region: str, model_name: str = "gemini-1.5-flash"):
+    def __init__(self, project_id: str, region: str, model_name: str = None, gemini_location: str = None):
         """
         Initialize answer grader.
         
         Args:
             project_id: GCP project ID
-            region: GCP region
-            model_name: Vertex AI model name for grading
+            region: GCP region (for RAG corpus, not used for Gemini)
+            model_name: Vertex AI model name for grading (default: from config)
+            gemini_location: Location for Gemini model (default: 'global' from config)
         """
         self.project_id = project_id
         self.region = region
-        self.model_name = model_name
+        self.model_name = model_name or GEMINI_MODEL_NAME
+        self.gemini_location = gemini_location or GEMINI_MODEL_LOCATION
         
-        # Initialize Vertex AI
-        vertexai.init(project=project_id, location=region)
+        # Initialize Vertex AI with global endpoint for Gemini models
+        # Global endpoint provides enhanced availability and works with all Gemini 2.0+ models
+        vertexai.init(project=project_id, location=self.gemini_location)
         
         # Initialize generative model
-        self.model = GenerativeModel(model_name)
+        self.model = GenerativeModel(self.model_name)
         
         # Quality thresholds
         self.min_score_threshold = 0.6  # Minimum overall score to accept
         self.min_relevance_threshold = 0.65  # Minimum relevance to query
         self.min_completeness_threshold = 0.55  # Minimum completeness
         
-        logger.info(f"Initialized AnswerGrader with model: {model_name}")
+        logger.info(f"Initialized AnswerGrader with model: {self.model_name} in location: {self.gemini_location}")
     
     def grade_contexts(
         self,

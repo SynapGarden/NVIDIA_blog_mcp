@@ -5,11 +5,12 @@ Provides query capabilities for Vertex AI RAG Corpus with iterative refinement.
 
 import logging
 import requests
-from typing import Dict, Optional, List
+from typing import Dict, List
 from google.auth import default
 from google.auth.transport.requests import Request
 from rag_query_transformer import QueryTransformer
-from rag_answer_grader import AnswerGrader, AnswerGrade
+from rag_answer_grader import AnswerGrader
+from config import GEMINI_MODEL_LOCATION, GEMINI_MODEL_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,9 @@ class RAGQuery:
             if self.enable_transformation:
                 self.query_transformer = QueryTransformer(
                     project_id=self.project_id,
-                    region=region
+                    region=region,
+                    model_name=GEMINI_MODEL_NAME,
+                    gemini_location=GEMINI_MODEL_LOCATION
                 )
             else:
                 self.query_transformer = None
@@ -68,7 +71,9 @@ class RAGQuery:
             if self.enable_grading:
                 self.answer_grader = AnswerGrader(
                     project_id=self.project_id,
-                    region=region
+                    region=region,
+                    model_name=GEMINI_MODEL_NAME,
+                    gemini_location=GEMINI_MODEL_LOCATION
                 )
             else:
                 self.answer_grader = None

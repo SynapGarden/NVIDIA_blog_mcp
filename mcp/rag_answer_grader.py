@@ -86,7 +86,7 @@ class AnswerGrader:
             
             # Prepare context summary for grading
             context_texts = []
-            for i, ctx in enumerate(contexts[:5], 1):  # Grade top 5 contexts
+            for i, ctx in enumerate(contexts[:15], 1):  # Grade top 15 contexts
                 text = ctx.get("text", ctx.get("content", ""))[:500]  # First 500 chars
                 source = ctx.get("source_uri", ctx.get("uri", "unknown"))
                 context_texts.append(f"[Context {i} from {source}]:\n{text}\n")

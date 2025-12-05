@@ -272,7 +272,7 @@ def search_nvidia_blogs(
         if not query or not query.strip():
             return ErrorResult(error="Query text cannot be empty")
 
-        top_k = max(1, min(top_k, 20))  # Clamp between 1 and 20
+        top_k = max(1, min(top_k, 25))  # Clamp between 1 and 25
 
         if method.lower() == "rag":
             # Use enhanced RAG method with transformation, grading, and refinement

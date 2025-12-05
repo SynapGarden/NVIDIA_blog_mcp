@@ -6,12 +6,12 @@ We release patches for security vulnerabilities. Which versions are eligible for
 
 | Version | Supported          |
 | ------- | ------------------ |
-| Latest  | :white_check_mark: |
-| < Latest| :x:                |
+| Latest  | Yes                |
+| < Latest| No                 |
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability, please **do not** open a public issue. Instead, please send an email to the repository maintainers with details about the vulnerability.
+If you discover a security vulnerability, please **do not** open a public issue. Instead, please report it via GitHub Security Advisories or contact the repository maintainers through GitHub with details about the vulnerability.
 
 **Please include:**
 - Type of vulnerability
@@ -33,5 +33,6 @@ This service:
 
 **Important:** Ensure that:
 - GCP service account credentials are never committed to the repository
-- Environment variables containing sensitive information are properly secured
-- The `.env` file is in `.gitignore` and never committed
+- Environment variables containing sensitive information are properly secured in Cloud Run
+- Service account keys and credentials are managed through Google Cloud IAM, not stored in code
+- All secrets are stored in Google Secret Manager or Cloud Run environment variables

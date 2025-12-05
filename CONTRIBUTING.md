@@ -26,8 +26,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/nvidia-blog-mcp.git
-   cd nvidia-blog-mcp
+   git clone https://github.com/TomBombadyl/nvidia-blog.git
+   cd nvidia-blog
    ```
 
 2. Create a virtual environment:
@@ -41,13 +41,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
    pip install -r requirements.txt
    ```
 
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your GCP configuration
-   ```
-
-5. Ensure you have GCP authentication configured:
+4. Ensure you have GCP authentication configured:
    ```bash
    gcloud auth application-default login
    ```
@@ -69,10 +63,16 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 - Update README.md if you've added features or changed setup
 - Update docstrings in code for new functions/classes
-- Keep technical documentation in `docs/` up to date
+- Keep inline code comments clear and helpful
+
+## Commit Messages
+
+- Use clear, descriptive commit messages
+- Reference issue numbers when applicable (e.g., "Fix #123: ...")
+- Keep commits focused on a single change when possible
 
 ## Questions?
 
-Feel free to open an issue with questions or reach out to maintainers.
+Feel free to open an issue with questions or reach out to maintainers via GitHub Issues.
 
-Thank you for contributing! 🎉
+Thank you for contributing!

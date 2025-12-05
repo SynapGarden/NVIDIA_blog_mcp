@@ -4,12 +4,12 @@ A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.i
 
 ## Features
 
-- 🔍 **Dual Search Methods**: RAG (Retrieval-Augmented Generation) and Vector Search
-- 🧠 **AI-Powered Query Enhancement**: Automatic query transformation and answer grading
-- 📚 **Comprehensive Coverage**: Access to 100+ NVIDIA blog posts from developer.nvidia.com and blogs.nvidia.com
-- 🔄 **Always Up-to-Date**: Daily automated ingestion keeps the database current with latest NVIDIA content
-- ✅ **Production Ready**: Deployed on Google Cloud Run with high availability
-- 🎯 **Grounded Responses**: All answers include source citations from official NVIDIA blogs
+- **Dual Search Methods**: RAG (Retrieval-Augmented Generation) and Vector Search
+- **AI-Powered Query Enhancement**: Automatic query transformation and answer grading
+- **Comprehensive Coverage**: Access to 100+ NVIDIA blog posts from developer.nvidia.com and blogs.nvidia.com
+- **Always Up-to-Date**: Daily automated ingestion keeps the database current with latest NVIDIA content
+- **Production Ready**: Deployed on Google Cloud Run with high availability
+- **Grounded Responses**: All answers include source citations from official NVIDIA blogs
 
 ## Quick Start for Cursor
 
@@ -94,13 +94,14 @@ nvidia_blog/
 ├── cloudbuild.mcp.yaml       # CI/CD configuration
 ├── requirements.txt           # Python dependencies
 ├── LICENSE                   # MIT License
+├── NOTICE                    # Third-party content notice
 ├── CONTRIBUTING.md           # Contribution guidelines
 └── SECURITY.md               # Security policy
 ```
 
 ## Configuration
 
-The server uses environment variables for configuration. See `.env.example` for all available options.
+The server uses environment variables for configuration. These are set in the Cloud Run deployment environment.
 
 Key configuration variables:
 - `GCP_PROJECT_ID`: Your Google Cloud project ID
@@ -139,13 +140,7 @@ Key configuration variables:
    pip install -r requirements.txt
    ```
 
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your GCP configuration
-   ```
-
-5. Authenticate with GCP:
+4. Authenticate with GCP:
    ```bash
    gcloud auth application-default login
    ```
@@ -159,7 +154,7 @@ cd mcp
 python mcp_service.py
 ```
 
-**Note**: The server expects all MCP modules to be in the same directory. When running locally, ensure you're in the `mcp/` directory or adjust Python path accordingly.
+**Note**: The server expects all MCP modules to be in the same directory. When running locally, ensure you're in the `mcp/` directory or adjust Python path accordingly. The server will start on `http://localhost:8080` by default (or the port specified by the `PORT` environment variable).
 
 ## Deployment
 
@@ -168,6 +163,28 @@ The server is deployed to Google Cloud Run using Cloud Build. See `cloudbuild.mc
 ```bash
 gcloud builds submit --config cloudbuild.mcp.yaml --project=your-project-id
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+**Server fails to start locally:**
+- Ensure you're in the `mcp/` directory when running `python mcp_service.py`
+- Verify all dependencies are installed: `pip install -r requirements.txt`
+- Check that GCP authentication is configured: `gcloud auth application-default login`
+
+**Import errors:**
+- Verify all MCP modules (`mcp_server.py`, `query_rag.py`, etc.) are in the same directory
+- Check Python path includes the `mcp/` directory
+
+**GCP authentication errors:**
+- Ensure service account has proper permissions for Vertex AI RAG Corpus and Vector Search
+- Verify `GCP_PROJECT_ID` and other environment variables are set correctly in Cloud Run
+
+**Query returns no results:**
+- Check that the RAG Corpus and Vector Search index are properly configured
+- Verify the ingestion pipeline has run successfully
+- Check distance threshold settings (default: 0.5)
 
 ## API Response Format
 
@@ -220,10 +237,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Status
 
-✅ **Operational** - Server is live and serving queries  
-📊 **Database**: 100+ blog posts indexed and searchable  
-🔄 **Updates**: Daily automated ingestion active  
-⚙️ **Search Metrics**: Vector distance threshold 0.5, default 10 neighbors
+**Operational** - Server is live and serving queries  
+**Database**: 100+ blog posts indexed and searchable  
+**Updates**: Daily automated ingestion active  
+**Search Metrics**: Vector distance threshold 0.5, default 10 neighbors
 
 ## Architecture
 
@@ -246,4 +263,3 @@ The MCP server uses a production-ready architecture:
 ---
 
 Built for developers by developers
-"Let's go find your wand" - TB

@@ -21,7 +21,7 @@ try:
 except ImportError:
     CLOUD_LOGGING_AVAILABLE = False
 
-from mcp.config import (
+from config import (
     BUCKET_NAME,
     REGION,
     RAG_CORPUS,

@@ -23,8 +23,8 @@ COPY private/rag_ingest.py ./
 COPY private/rss_fetcher.py ./
 COPY private/vector_search_ingest.py ./
 
-# Copy mcp package (needed for config import)
-COPY mcp/ ./mcp/
+# Copy config from mcp/ folder (needed by main.py)
+COPY mcp/config.py ./
 
 # Set Python to run in unbuffered mode for better logging
 ENV PYTHONUNBUFFERED=1

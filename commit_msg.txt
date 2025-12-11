@@ -1,0 +1,36 @@
+feat: Add date awareness to MCP search and expose ingestion pipeline
+
+This commit fixes the inability to retrieve articles based on temporal
+queries (e.g., "What's new today?", "Recent NVIDIA articles") by
+implementing date awareness throughout the entire pipeline.
+
+Changes:
+
+1. Query Transformation (mcp/rag_query_transformer.py):
+   - Enhanced query transformer with current date context
+   - Added temporal query handling (today, recent, latest, newest)
+   - Transforms temporal queries into date-specific searches
+   - Improved code style and formatting
+
+2. Ingestion Pipeline (private/):
+   - Modified html_cleaner.py to prepend metadata headers (date, title, source)
+   - Updated main.py to pass metadata to HTML cleaner
+   - Ensures every RAG chunk contains publication date context
+   - Added complete ingestion pipeline to repository
+
+3. Documentation:
+   - Added DATE_AWARENESS_FIX.md with detailed explanation
+   - Added CODE_REVIEW_DATE_FIX.md with comprehensive code review
+   - Documents root cause, solution, and deployment steps
+
+4. Repository Structure:
+   - Updated .gitignore to include private/ ingestion code
+   - Exposed complete data pipeline for transparency
+
+Impact:
+- Temporal queries now retrieve relevant date-specific articles
+- Better search quality for "today", "recent", "latest" queries
+- Complete visibility into ingestion and processing pipeline
+- Every chunk contains "Publication Date:" header for date matching
+
+Closes date awareness issue.

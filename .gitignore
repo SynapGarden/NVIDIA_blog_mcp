@@ -44,9 +44,8 @@ application_default_credentials.json
 *.bak
 *.swp
 
-# Private/internal files (not for public repo)
-private/
+# Assets (screenshots, images, etc.)
 assets/
 
 # Kaggle submission notebook (submitted separately, not needed in repo)
-kaggle_submission.ipynb
+private/kaggle_submission.ipynb

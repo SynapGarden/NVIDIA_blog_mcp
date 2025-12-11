@@ -51,8 +51,7 @@ RAG_VECTOR_DISTANCE_THRESHOLD = float(os.getenv("RAG_VECTOR_DISTANCE_THRESHOLD",
 
 # Gemini Model Configuration
 # Gemini models are available in europe-west4 (Netherlands) - closest to europe-west3 (Frankfurt)
-# Using europe-west4 for better data residency and reduced latency vs us-central1
-# Per Google docs: Use region-specific locations instead of 'global' for data residency requirements
+
 GEMINI_MODEL_LOCATION = os.getenv("GEMINI_MODEL_LOCATION", "europe-west4")
 GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
 

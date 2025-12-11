@@ -324,6 +324,9 @@ class RAGQuery:
             # Filter out header-only or very short chunks
             # These often occur when date queries match metadata headers
             filtered_contexts = []
+            skipped_empty_count = 0
+            skipped_header_only_count = 0
+            
             for ctx in contexts:
                 if isinstance(ctx, dict):
                     text = ctx.get("text", "")
@@ -356,14 +359,23 @@ class RAGQuery:
                         if len(content_without_header) >= 100:
                             filtered_contexts.append(ctx)
                         else:
+                            skipped_header_only_count += 1
                             logger.debug(
-                                f"Filtered out header-only chunk (content length after header removal: {len(content_without_header)})"
+                                f"Filtered out header-only chunk (content length after header removal: {len(content_without_header)}, distance: {ctx.get('distance', 'N/A')})"
                             )
                     else:
                         # Skip chunks with empty text - don't add them to filtered contexts
+                        skipped_empty_count += 1
                         logger.debug(f"Skipped chunk with empty text field (distance: {ctx.get('distance', 'N/A')})")
                 else:
                     filtered_contexts.append(ctx)
+            
+            # Log summary if we filtered out many contexts
+            if skipped_empty_count > 0 or skipped_header_only_count > 0:
+                logger.info(
+                    f"Filtered contexts: {skipped_empty_count} empty text, {skipped_header_only_count} header-only. "
+                    f"Kept {len(filtered_contexts)} substantial contexts out of {len(contexts)} retrieved."
+                )
             
             contexts = filtered_contexts
             

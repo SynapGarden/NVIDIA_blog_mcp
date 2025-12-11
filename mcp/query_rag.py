@@ -10,7 +10,7 @@ from google.auth import default
 from google.auth.transport.requests import Request
 from rag_query_transformer import QueryTransformer
 from rag_answer_grader import AnswerGrader
-from config import GEMINI_MODEL_LOCATION, GEMINI_MODEL_NAME
+from config import GEMINI_MODEL_LOCATION, GEMINI_MODEL_NAME, RAG_VECTOR_DISTANCE_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class RAGQuery:
         self,
         query_text: str,
         similarity_top_k: int = 10,
-        vector_distance_threshold: float = 0.5
+        vector_distance_threshold: float = None
     ) -> List[Dict]:
         """
         Internal method to retrieve contexts from RAG Corpus.
@@ -114,6 +114,10 @@ class RAGQuery:
             f"{self.base_url}/projects/{self.project_id}/"
             f"locations/{self.region}:retrieveContexts"
         )
+        
+        # Use config threshold if not specified
+        if vector_distance_threshold is None:
+            vector_distance_threshold = RAG_VECTOR_DISTANCE_THRESHOLD
         
         # Prepare request body
         request_body = {
@@ -161,7 +165,7 @@ class RAGQuery:
         self,
         query_text: str,
         similarity_top_k: int = 10,
-        vector_distance_threshold: float = 0.5
+        vector_distance_threshold: float = None
     ) -> Dict:
         """
         Enhanced query RAG Corpus with transformation, grading, and iterative refinement.
@@ -183,6 +187,10 @@ class RAGQuery:
         original_query = query_text
         current_query = query_text
         refinement_iterations = 0
+        
+        # Use config threshold if not specified
+        if vector_distance_threshold is None:
+            vector_distance_threshold = RAG_VECTOR_DISTANCE_THRESHOLD
         
         try:
             # Step 1: Transform query if enabled

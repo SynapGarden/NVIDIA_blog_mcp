@@ -4,7 +4,9 @@ Provides query capabilities for Vertex AI RAG Corpus with iterative refinement.
 """
 
 import logging
+import re
 import requests
+import time
 from typing import Dict, List
 from google.auth import default
 from google.auth.transport.requests import Request
@@ -13,6 +15,13 @@ from rag_answer_grader import AnswerGrader
 from config import GEMINI_MODEL_LOCATION, GEMINI_MODEL_NAME, RAG_VECTOR_DISTANCE_THRESHOLD
 
 logger = logging.getLogger(__name__)
+# Enable debug logging to diagnose API response structure
+logger.setLevel(logging.DEBUG)
+
+# Retry configuration for Google API rate limiting
+MAX_RETRIES = 5
+INITIAL_BACKOFF = 1  # seconds
+MAX_BACKOFF = 60  # seconds
 
 
 class RAGQuery:
@@ -92,11 +101,96 @@ class RAGQuery:
             self.credentials.refresh(Request())
         return self.credentials.token
     
+    def _make_api_call_with_retry(self, url: str, request_body: Dict, headers: Dict) -> Dict:
+        """
+        Make API call with exponential backoff retry logic to handle rate limiting.
+        
+        Google's Vertex AI RAG API can return 417 errors when rate limited.
+        This method retries with exponential backoff.
+        
+        Args:
+            url: API endpoint URL
+            request_body: Request body as dict
+            headers: Request headers
+        
+        Returns:
+            Parsed JSON response
+        
+        Raises:
+            Exception: If all retries fail
+        """
+        backoff = INITIAL_BACKOFF
+        last_error = None
+        
+        for attempt in range(MAX_RETRIES):
+            try:
+                # Remove Expect header to avoid 417 errors (Expect: 100-continue issues)
+                safe_headers = headers.copy()
+                
+                logger.info(f"API call attempt {attempt + 1}/{MAX_RETRIES}")
+                
+                response = requests.post(
+                    url,
+                    headers=safe_headers,
+                    json=request_body,
+                    timeout=60
+                )
+                
+                # Success
+                if response.status_code == 200:
+                    logger.debug(f"API call succeeded on attempt {attempt + 1}")
+                    return response.json()
+                
+                # Rate limit errors - retry with backoff
+                elif response.status_code in [429, 417, 503]:  # 429=Too Many Requests, 417=Expectation Failed, 503=Service Unavailable
+                    last_error = (
+                        f"Rate limit/temporary error {response.status_code}: {response.text[:200]}"
+                    )
+                    logger.warning(
+                        f"API returned {response.status_code} (rate limited?). "
+                        f"Retrying in {backoff} seconds... (attempt {attempt + 1}/{MAX_RETRIES})"
+                    )
+                    
+                    if attempt < MAX_RETRIES - 1:
+                        time.sleep(backoff)
+                        backoff = min(backoff * 2, MAX_BACKOFF)  # Exponential backoff
+                    continue
+                
+                # Other errors - fail immediately
+                else:
+                    error_msg = (
+                        f"Failed to query RAG Corpus: {response.status_code} - "
+                        f"{response.text}"
+                    )
+                    logger.error(error_msg)
+                    raise Exception(error_msg)
+            
+            except requests.exceptions.RequestException as e:
+                last_error = str(e)
+                logger.warning(
+                    f"Network error on attempt {attempt + 1}/{MAX_RETRIES}: {e}. "
+                    f"Retrying in {backoff} seconds..."
+                )
+                
+                if attempt < MAX_RETRIES - 1:
+                    time.sleep(backoff)
+                    backoff = min(backoff * 2, MAX_BACKOFF)
+                else:
+                    raise
+        
+        # All retries exhausted
+        error_msg = (
+            f"Failed to query RAG Corpus after {MAX_RETRIES} attempts. "
+            f"Last error: {last_error}"
+        )
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    
     def _retrieve_contexts(
         self,
         query_text: str,
         similarity_top_k: int = 10,
-        vector_distance_threshold: float = None
+        vector_distance_threshold: float = RAG_VECTOR_DISTANCE_THRESHOLD
     ) -> List[Dict]:
         """
         Internal method to retrieve contexts from RAG Corpus.
@@ -115,10 +209,6 @@ class RAGQuery:
             f"locations/{self.region}:retrieveContexts"
         )
         
-        # Use config threshold if not specified
-        if vector_distance_threshold is None:
-            vector_distance_threshold = RAG_VECTOR_DISTANCE_THRESHOLD
-        
         # Prepare request body
         request_body = {
             "vertex_rag_store": {
@@ -133,31 +223,172 @@ class RAGQuery:
             }
         }
 
-        # Make API call
+        # Make API call with retry logic for rate limiting
         headers = {
             "Authorization": f"Bearer {self._get_access_token()}",
             "Content-Type": "application/json"
         }
 
-        response = requests.post(
-            retrieve_url,
-            headers=headers,
-            json=request_body,
-            timeout=60
-        )
-
-        if response.status_code != 200:
-            error_msg = (
-                f"Failed to query RAG Corpus: {response.status_code} - "
-                f"{response.text}"
-            )
-            logger.error(error_msg)
-            raise Exception(error_msg)
-
-        result = response.json()
+        # Use retry wrapper to handle rate limiting
+        result = self._make_api_call_with_retry(retrieve_url, request_body, headers)
         
-        # Extract contexts from response
+        # Debug: Log full API response structure to diagnose empty text issue
+        if logger.isEnabledFor(logging.DEBUG):
+            import json
+            logger.debug(f"=== RAG API RESPONSE DEBUG ===")
+            logger.debug(f"Raw API response keys: {list(result.keys())}")
+            logger.debug(f"Full API response: {json.dumps(result, indent=2, default=str)[:2000]}")  # First 2000 chars
+            if "contexts" in result:
+                logger.debug(f"Contexts type: {type(result.get('contexts'))}")
+                if isinstance(result.get("contexts"), dict):
+                    logger.debug(f"Contexts dict keys: {list(result.get('contexts', {}).keys())}")
+                    contexts_data = result.get("contexts", {})
+                    if "contexts" in contexts_data:
+                        logger.debug(f"Number of contexts: {len(contexts_data.get('contexts', []))}")
+                        # Log first 3 contexts with full structure
+                        for i, ctx in enumerate(contexts_data.get("contexts", [])[:3]):
+                            logger.debug(f"Context {i+1} full structure: {json.dumps(ctx, indent=2, default=str)}")
+            logger.debug(f"=== END RAG API RESPONSE DEBUG ===")
+        
+        # Extract contexts from response - handle multiple possible response structures
+        # Try the expected structure first: contexts.contexts[]
         contexts = result.get("contexts", {}).get("contexts", [])
+        
+        # Fallback: if contexts is directly a list
+        if not contexts and isinstance(result.get("contexts"), list):
+            contexts = result.get("contexts", [])
+        
+        # Handle case where contexts might be wrapped in chunk objects
+        # Check if contexts exist and are wrapped in chunk objects
+        if contexts and isinstance(contexts, list) and len(contexts) > 0:
+            # Check if first context has a 'chunk' key (API might wrap content)
+            first_ctx = contexts[0]
+            if isinstance(first_ctx, dict) and "chunk" in first_ctx:
+                contexts = [ctx.get("chunk", ctx) for ctx in contexts]
+            
+            # Additional extraction: Check for nested text fields
+            # Some API responses might have text under different paths
+            normalized_contexts = []
+            for idx, ctx in enumerate(contexts):
+                if isinstance(ctx, dict):
+                    # Try multiple possible text field locations with detailed logging
+                    text = None
+                    extraction_attempts = []
+                    
+                    # Attempt 1: Direct 'text' field
+                    if ctx.get("text"):
+                        text = ctx.get("text")
+                        extraction_attempts.append("text")
+                    # Attempt 2: Direct 'content' field
+                    elif ctx.get("content"):
+                        text = ctx.get("content")
+                        extraction_attempts.append("content")
+                    # Attempt 3: Nested chunk.text
+                    elif isinstance(ctx.get("chunk"), dict) and ctx.get("chunk", {}).get("text"):
+                        text = ctx.get("chunk", {}).get("text")
+                        extraction_attempts.append("chunk.text")
+                    # Attempt 4: Nested chunk.content
+                    elif isinstance(ctx.get("chunk"), dict) and ctx.get("chunk", {}).get("content"):
+                        text = ctx.get("chunk", {}).get("content")
+                        extraction_attempts.append("chunk.content")
+                    # Attempt 5: chunk_text field
+                    elif ctx.get("chunk_text"):
+                        text = ctx.get("chunk_text")
+                        extraction_attempts.append("chunk_text")
+                    # Attempt 6: text_content field
+                    elif ctx.get("text_content"):
+                        text = ctx.get("text_content")
+                        extraction_attempts.append("text_content")
+                    else:
+                        text = ""
+                        extraction_attempts.append("NONE - all attempts failed")
+                    
+                    if logger.isEnabledFor(logging.DEBUG) and idx < 3:
+                        logger.debug(f"Context {idx+1} text extraction: {extraction_attempts[-1]}, text_length={len(text) if text else 0}, available_keys={list(ctx.keys())}")
+                    
+                    # Create normalized context with text field
+                    normalized_ctx = {
+                        "text": text,
+                        "distance": ctx.get("distance"),
+                        "source_uri": ctx.get("source_uri") or ctx.get("uri"),
+                    }
+                    # Preserve any other fields
+                    for key, value in ctx.items():
+                        if key not in normalized_ctx:
+                            normalized_ctx[key] = value
+                    normalized_contexts.append(normalized_ctx)
+                else:
+                    normalized_contexts.append(ctx)
+            contexts = normalized_contexts
+            
+            # Filter out header-only or very short chunks
+            # These often occur when date queries match metadata headers
+            filtered_contexts = []
+            for ctx in contexts:
+                if isinstance(ctx, dict):
+                    text = ctx.get("text", "")
+                    if text:
+                        # Remove metadata headers and separators to check actual content
+                        # Header pattern: "Publication Date: ...\nTitle: ...\nSource: ...\n\n---\n\n"
+                        content_without_header = text
+                        # Remove common header patterns
+                        # Remove "Publication Date: ..." line
+                        content_without_header = re.sub(
+                            r'^Publication Date:.*?\n', '', content_without_header, flags=re.MULTILINE
+                        )
+                        # Remove "Title: ..." line
+                        content_without_header = re.sub(
+                            r'^Title:.*?\n', '', content_without_header, flags=re.MULTILINE
+                        )
+                        # Remove "Source: ..." line
+                        content_without_header = re.sub(
+                            r'^Source:.*?\n', '', content_without_header, flags=re.MULTILINE
+                        )
+                        # Remove separator lines
+                        content_without_header = re.sub(
+                            r'^---\s*$', '', content_without_header, flags=re.MULTILINE
+                        )
+                        # Strip whitespace
+                        content_without_header = content_without_header.strip()
+                        
+                        # Keep chunk if it has substantial content after removing headers
+                        # Minimum 100 characters of actual article content
+                        if len(content_without_header) >= 100:
+                            filtered_contexts.append(ctx)
+                        else:
+                            logger.debug(
+                                f"Filtered out header-only chunk (content length after header removal: {len(content_without_header)})"
+                            )
+                    else:
+                        # Skip chunks with empty text - don't add them to filtered contexts
+                        logger.debug(f"Skipped chunk with empty text field (distance: {ctx.get('distance', 'N/A')})")
+                else:
+                    filtered_contexts.append(ctx)
+            
+            contexts = filtered_contexts
+            
+            # Debug: Log first context structure to see where text might be
+            if logger.isEnabledFor(logging.DEBUG) and contexts:
+                logger.debug(f"First context keys: {list(contexts[0].keys()) if isinstance(contexts[0], dict) else 'Not a dict'}")
+                logger.debug(f"First context text length: {len(contexts[0].get('text', '')) if isinstance(contexts[0], dict) else 'N/A'}")
+        
+        # Log warning if contexts found but text fields are empty
+        if contexts:
+            empty_count = sum(1 for ctx in contexts if isinstance(ctx, dict) and not ctx.get("text") and not ctx.get("content"))
+            if empty_count > 0:
+                # Log full structure of first empty context for debugging
+                first_empty = next((ctx for ctx in contexts if isinstance(ctx, dict) and not ctx.get("text") and not ctx.get("content")), None)
+                if first_empty:
+                    logger.warning(
+                        f"Found {len(contexts)} contexts but {empty_count} have empty text fields. "
+                        f"Sample empty context keys: {list(first_empty.keys())}"
+                    )
+        
+        # Log warning if no contexts found
+        if not contexts:
+            logger.warning(
+                f"No contexts found in response. Response structure: {list(result.keys())}"
+            )
         
         return contexts
 
@@ -165,7 +396,7 @@ class RAGQuery:
         self,
         query_text: str,
         similarity_top_k: int = 10,
-        vector_distance_threshold: float = None
+        vector_distance_threshold: float = RAG_VECTOR_DISTANCE_THRESHOLD
     ) -> Dict:
         """
         Enhanced query RAG Corpus with transformation, grading, and iterative refinement.
@@ -187,10 +418,6 @@ class RAGQuery:
         original_query = query_text
         current_query = query_text
         refinement_iterations = 0
-        
-        # Use config threshold if not specified
-        if vector_distance_threshold is None:
-            vector_distance_threshold = RAG_VECTOR_DISTANCE_THRESHOLD
         
         try:
             # Step 1: Transform query if enabled

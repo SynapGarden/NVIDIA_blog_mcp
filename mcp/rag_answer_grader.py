@@ -88,8 +88,21 @@ class AnswerGrader:
             context_texts = []
             for i, ctx in enumerate(contexts[:15], 1):  # Grade top 15 contexts
                 text = ctx.get("text", ctx.get("content", ""))[:500]  # First 500 chars
-                source = ctx.get("source_uri", ctx.get("uri", "unknown"))
-                context_texts.append(f"[Context {i} from {source}]:\n{text}\n")
+                if text:  # Only add non-empty contexts
+                    source = ctx.get("source_uri", ctx.get("uri", "unknown"))
+                    context_texts.append(f"[Context {i} from {source}]:\n{text}\n")
+            
+            # If all contexts are empty, return early with appropriate grade
+            if not context_texts:
+                logger.warning("All retrieved contexts have empty text fields")
+                return AnswerGrade(
+                    score=0.0,
+                    relevance=0.0,
+                    completeness=0.0,
+                    grounded=False,
+                    reasoning="All retrieved contexts have empty text fields. The RAG API returned contexts with valid distance scores but no text content.",
+                    should_refine=True
+                )
             
             contexts_summary = "\n".join(context_texts)
             
@@ -144,19 +157,32 @@ Provide your evaluation in this exact JSON format (no markdown, no code blocks):
                 }
             )
             
-            # Parse JSON response
+            # Parse JSON response with improved error handling
             import json
             import re
             
             response_text = response.text.strip()
             
+            # Check if response is empty or invalid
+            if not response_text:
+                logger.error("Gemini returned empty response for grading")
+                raise ValueError("Empty response from Gemini model")
+            
             # Extract JSON from response (handle markdown code blocks)
             json_match = re.search(r'\{[^{}]*\}', response_text, re.DOTALL)
             if json_match:
-                grade_dict = json.loads(json_match.group())
+                try:
+                    grade_dict = json.loads(json_match.group())
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse extracted JSON: {e}. Response text: {response_text[:200]}")
+                    raise
             else:
                 # Fallback: try to parse entire response
-                grade_dict = json.loads(response_text)
+                try:
+                    grade_dict = json.loads(response_text)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to parse response as JSON: {e}. Response text: {response_text[:200]}")
+                    raise
             
             grade = AnswerGrade(**grade_dict)
             
@@ -170,13 +196,18 @@ Provide your evaluation in this exact JSON format (no markdown, no code blocks):
             return grade
             
         except Exception as e:
-            logger.error(f"Error grading contexts: {e}")
+            logger.error(f"Error grading contexts: {e}", exc_info=True)
             # Return a conservative grade that triggers refinement
+            # Provide more context about the error type
+            error_msg = f"Grading error: {type(e).__name__}: {str(e)}"
+            if "Expecting value" in str(e) or "JSONDecodeError" in str(e):
+                error_msg += " (Gemini returned invalid JSON - likely due to empty or malformed contexts)"
+            
             return AnswerGrade(
                 score=0.5,
                 relevance=0.5,
                 completeness=0.5,
                 grounded=False,
-                reasoning=f"Grading error: {str(e)}",
+                reasoning=error_msg,
                 should_refine=True
             )

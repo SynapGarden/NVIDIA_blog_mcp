@@ -126,8 +126,9 @@
 - **Status**: ✅ Active
 - **Purpose**: Semantic search for blog articles
 - **Configuration**:
-  - Chunking: 512 tokens with 50 token overlap
-  - Vector distance threshold: 0.5
+  - Chunking: 768 words with 128 word overlap (optimized for technical blog content)
+  - Layout Parser: Default parsing libraries (appropriate for plain text)
+  - Vector distance threshold: 0.7
 
 ---
 

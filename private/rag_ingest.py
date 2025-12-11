@@ -102,8 +102,8 @@ class RAGIngester:
                         "uris": [gcs_uri]
                     },
                     "rag_file_chunking_config": {
-                        "chunk_size": 512,
-                        "chunk_overlap": 50
+                        "chunk_size": 768,  # words (optimized for technical blog content)
+                        "chunk_overlap": 128  # words (~17% overlap for context preservation)
                     }
                 }
             }
@@ -138,11 +138,83 @@ class RAGIngester:
                 raise Exception(error_msg)
             
             result = response.json()
-            imported_count = result.get("imported_rag_files_count", 0)
+            
+            # The import endpoint returns a Long Running Operation (LRO)
+            # We need to poll the operation until it completes
+            operation_name = result.get("name")
+            if not operation_name:
+                error_msg = f"No operation name in import response: {result}"
+                logger.error(error_msg)
+                raise Exception(error_msg)
+            
+            logger.info(f"Import operation started: {operation_name}. Polling until completion...")
+            
+            # Poll operation until done
+            max_poll_attempts = 120  # 10 minutes max (120 * 5 seconds)
+            poll_attempt = 0
+            imported_count = 0
+            skipped_count = 0
+            
+            while poll_attempt < max_poll_attempts:
+                poll_attempt += 1
+                
+                # Get operation status
+                operation_url = f"{self.base_url}/{operation_name}"
+                op_response = requests.get(
+                    operation_url,
+                    headers=headers,
+                    timeout=60
+                )
+                
+                if op_response.status_code != 200:
+                    error_msg = (
+                        f"Failed to poll operation: {op_response.status_code} - "
+                        f"{op_response.text}"
+                    )
+                    logger.error(error_msg)
+                    raise Exception(error_msg)
+                
+                op_result = op_response.json()
+                
+                # Check if operation is done
+                if op_result.get("done", False):
+                    # Check for errors
+                    if "error" in op_result:
+                        error_details = op_result["error"]
+                        error_msg = (
+                            f"Import operation failed: {error_details.get('message', 'Unknown error')} "
+                            f"(code: {error_details.get('code', 'unknown')})"
+                        )
+                        logger.error(error_msg)
+                        raise Exception(error_msg)
+                    
+                    # Get actual imported/skipped counts from response
+                    response_data = op_result.get("response", {})
+                    imported_count = response_data.get("imported_rag_files_count", 0)
+                    skipped_count = response_data.get("skipped_rag_files_count", 0)
+                    
+                    logger.info(
+                        f"Import operation completed for {item_id}. "
+                        f"Imported: {imported_count} files, "
+                        f"Skipped: {skipped_count} files"
+                    )
+                    break
+                
+                # Operation still in progress, wait before polling again
+                if poll_attempt % 12 == 0:  # Log every minute
             logger.info(
-                f"Successfully imported RAG file for {item_id}. "
-                f"Imported: {imported_count} files"
+                        f"Import operation still in progress (attempt {poll_attempt}/"
+                        f"{max_poll_attempts})..."
+                    )
+                time.sleep(5)  # Wait 5 seconds before polling again
+            else:
+                # Max attempts reached
+                error_msg = (
+                    f"Import operation timed out after {max_poll_attempts} attempts "
+                    f"({max_poll_attempts * 5} seconds)"
             )
+                logger.error(error_msg)
+                raise Exception(error_msg)
             
         except Exception as e:
             logger.error(f"Error ingesting to RAG Corpus: {e}")

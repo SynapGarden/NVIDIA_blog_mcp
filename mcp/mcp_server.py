@@ -20,12 +20,10 @@ from config import (
     RAG_VECTOR_DISTANCE_THRESHOLD
 )
 # Import query modules lazily to prevent startup failures
-# from query_rag import RAGQuery
-# from query_vector_search import VectorSearchQuery
 
-# Configure logging
+# Configure logging - use DEBUG to capture full API response structure diagnostics
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -136,7 +134,6 @@ mcp = FastMCP(
 
 # Use default streamable_http_path ("/mcp")
 # When mounted at "/" in Starlette, the endpoint will be at "/mcp" (mount path + default path)
-# mcp.settings.streamable_http_path = "/mcp"  # This is the default
 
 # Add health check endpoint for faster connection verification
 # This helps with cold starts and connection testing

@@ -3,6 +3,8 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
+      - '-f'
+      - 'private/Dockerfile'
       - '-t'
       - 'europe-west3-docker.pkg.dev/$PROJECT_ID/rss-ingestion/rss-ingestion-job:$BUILD_ID'
       - '-t'

@@ -1,6 +1,6 @@
 """
 Vertex AI Vector Search Ingestion
-Handles embedding text using text-embedding-004 and upserting vectors into Vector Search index.
+Handles embedding text using text-multilingual-embedding-002 and upserting vectors into Vector Search index.
 """
 
 import logging
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class VectorSearchIngester:
     """Embeds text and upserts vectors to Vertex AI Vector Search."""
     
-    def __init__(self, endpoint_id: str, index_id: str, region: str, model: str = "text-embedding-004"):
+    def __init__(self, endpoint_id: str, index_id: str, region: str, model: str = "text-multilingual-embedding-002"):
         """
         Initialize Vector Search ingester.
         
@@ -25,7 +25,7 @@ class VectorSearchIngester:
             endpoint_id: Vector Search endpoint ID
             index_id: Vector Search index ID
             region: GCP region
-            model: Embedding model name (default: text-embedding-004)
+            model: Embedding model name (default: text-multilingual-embedding-002)
         """
         self.endpoint_id = endpoint_id
         self.index_id = index_id
@@ -59,7 +59,7 @@ class VectorSearchIngester:
     )
     def embed_text(self, text: str) -> List[float]:
         """
-        Generate embedding for text using text-embedding-004.
+        Generate embedding for text using text-multilingual-embedding-002.
         
         Args:
             text: Text to embed

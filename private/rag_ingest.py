@@ -202,7 +202,7 @@ class RAGIngester:
                 
                 # Operation still in progress, wait before polling again
                 if poll_attempt % 12 == 0:  # Log every minute
-            logger.info(
+                    logger.info(
                         f"Import operation still in progress (attempt {poll_attempt}/"
                         f"{max_poll_attempts})..."
                     )
@@ -212,7 +212,7 @@ class RAGIngester:
                 error_msg = (
                     f"Import operation timed out after {max_poll_attempts} attempts "
                     f"({max_poll_attempts * 5} seconds)"
-            )
+                )
                 logger.error(error_msg)
                 raise Exception(error_msg)
             

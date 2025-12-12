@@ -47,5 +47,5 @@ application_default_credentials.json
 # Assets (screenshots, images, etc.)
 assets/
 
-# Kaggle submission notebook (submitted separately, not needed in repo)
-private/kaggle_submission.ipynb
+# Private folder (ingestion pipeline - not needed in public repo)
+private/

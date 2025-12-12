@@ -1,3 +1,6 @@
+<img width="2752" height="1536" alt="NVIDIA BLOG MCP Thumbnail" src="https://github.com/user-attachments/assets/99200cd5-423d-4178-81b1-146170996618" />
+
+
 # NVIDIA Blog MCP Server
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that provides AI assistants like Cursor with grounded access to NVIDIA's official developer and blog content through Retrieval-Augmented Generation (RAG).

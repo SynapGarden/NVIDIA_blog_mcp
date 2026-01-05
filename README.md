@@ -19,9 +19,8 @@ In Cursor settings, add this .json block to your Cursor MCP configuration (usual
 
 ```json
 {
-  "mcpServers": {
-    "nvidia-blog": {
-      "url": "https://nvidia-blog-mcp-server-4vvir4xvda-ey.a.run.app/mcp",
+  "nvidia-blog": {
+      "url": "https://nvidia-blog-mcp-4vvir4xvda-ey.a.run.app/mcp",
       "transport": "streamable-http"
     }
   }
